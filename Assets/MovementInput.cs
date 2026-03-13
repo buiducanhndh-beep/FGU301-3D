@@ -9,6 +9,8 @@ public class MovementInput : MonoBehaviour
     [SerializeField] private float speed = 5f;
     [SerializeField] private float jumpHeight = 2f;
     [SerializeField] private float gravity = -9.8f;
+
+
     private CharacterController controller;
     private Vector2 moveInput;
     private Vector3 velocity;
