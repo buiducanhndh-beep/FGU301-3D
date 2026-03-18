@@ -20,10 +20,18 @@ public class newMovement : MonoBehaviour
     [Header("Physics")]
     [SerializeField] private float gravity = -9.8f;
 
+    [Header("Player Animation")]
+    public Animator animator;
+
     private CharacterController controller;
     private Vector2 moveInput;
     private Vector3 velocity;
     private bool isCrouching = false;
+
+    // ✅ Matches your Animator parameter exactly
+    private static readonly int MoveAmountHash = Animator.StringToHash("moveAmount");
+    private static readonly int IsCrouchHash   = Animator.StringToHash("IsCrouching");
+    private static readonly int JumpHash       = Animator.StringToHash("Jump");
 
     public MainCam mainCam;
 
@@ -60,26 +68,25 @@ public class newMovement : MonoBehaviour
         if (controller.isGrounded && !isCrouching)
         {
             velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            if (animator.parameters.Length > 0)
+                animator.SetTrigger(JumpHash);
         }
     }
 
     private void OnCrouchStart(InputAction.CallbackContext context)
     {
-    Debug.Log("Crouch Start triggered");
-
+        Debug.Log("Crouch Start triggered");
         isCrouching = true;
         controller.height = crouchHeight;
-        // Move controller down so feet stay on ground
-        
+        animator.SetBool(IsCrouchHash, true);
     }
 
     private void OnCrouchStop(InputAction.CallbackContext context)
     {
-
         Debug.Log("Crouch Stop triggered");
         isCrouching = false;
         controller.height = normalHeight;
-        
+        animator.SetBool(IsCrouchHash, false);
     }
 
     private void FixedUpdate()
@@ -91,14 +98,11 @@ public class newMovement : MonoBehaviour
     {
         moveInput = moveAction.action.ReadValue<Vector2>();
 
-        // Apply camera Y rotation to movement direction
         Vector3 move = mainCam.flatrotation * new Vector3(moveInput.x, 0, moveInput.y).normalized;
 
-        // Use crouch speed if crouching
         float currentSpeed = isCrouching ? crouchSpeed : speed;
         controller.Move(move * currentSpeed * Time.fixedDeltaTime);
 
-        // Smooth rotation
         if (move.magnitude > 0)
         {
             Quaternion targetRotation = Quaternion.LookRotation(move);
@@ -112,5 +116,14 @@ public class newMovement : MonoBehaviour
         }
         velocity.y += gravity * Time.fixedDeltaTime;
         controller.Move(velocity * Time.fixedDeltaTime);
+
+        UpdateAnimator(move);
+    }
+
+    void UpdateAnimator(Vector3 move)
+    {
+        // ✅ Drives your blend tree: 0 = Idle, 0.5 = Walk, 1 = Run
+        float moveAmount = move.magnitude;
+        animator.SetFloat(MoveAmountHash, moveAmount, 0.1f, Time.fixedDeltaTime);
     }
 }
