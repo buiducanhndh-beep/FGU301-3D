@@ -66,5 +66,5 @@
     "explorer.fileNesting.patterns": {
         "*.sln": "*.csproj"
     },
-    "dotnet.defaultSolution": "FGU 3D project.slnx"
+    "dotnet.defaultSolution": "FGU301-3D.slnx"
 }
