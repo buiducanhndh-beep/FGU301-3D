@@ -20,6 +20,11 @@ public class newMovement : MonoBehaviour
     [Header("Physics")]
     [SerializeField] private float gravity = -9.8f;
 
+    [Header("Moving Platform Support")]
+    [SerializeField] private bool stickToMovingPlatform = true;
+    [SerializeField] private LayerMask groundLayers = ~0;
+    [SerializeField] private float groundCheckDistance = 0.2f;
+
     [Header("Player Animation")]
     public Animator animator;
 
@@ -27,6 +32,8 @@ public class newMovement : MonoBehaviour
     private Vector2 moveInput;
     private Vector3 velocity;
     private bool isCrouching = false;
+    private Transform currentPlatform;
+    private Vector3 lastPlatformPosition;
 
     // ✅ Matches your Animator parameter exactly
     private static readonly int MoveAmountHash = Animator.StringToHash("moveAmount");
@@ -91,7 +98,59 @@ public class newMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
+        UpdatePlatformAttachment();
+
+        if (stickToMovingPlatform)
+        {
+            ApplyPlatformDelta();
+        }
+
         PlayerMovement();
+    }
+
+    private void UpdatePlatformAttachment()
+    {
+        if (!stickToMovingPlatform)
+        {
+            currentPlatform = null;
+            return;
+        }
+
+        Vector3 origin = transform.position + Vector3.up * 0.1f;
+        float rayDistance = controller.height * 0.6f + groundCheckDistance;
+
+        if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, rayDistance, groundLayers, QueryTriggerInteraction.Ignore))
+        {
+            if (hit.transform.GetComponentInParent<MovingPlatfor>() != null)
+            {
+                if (currentPlatform != hit.transform)
+                {
+                    currentPlatform = hit.transform;
+                    lastPlatformPosition = currentPlatform.position;
+                }
+
+                return;
+            }
+        }
+
+        currentPlatform = null;
+    }
+
+    private void ApplyPlatformDelta()
+    {
+        if (currentPlatform == null)
+        {
+            return;
+        }
+
+        Vector3 platformDelta = currentPlatform.position - lastPlatformPosition;
+
+        if (platformDelta.sqrMagnitude > 0f)
+        {
+            controller.Move(platformDelta);
+        }
+
+        lastPlatformPosition = currentPlatform.position;
     }
 
     void PlayerMovement()
