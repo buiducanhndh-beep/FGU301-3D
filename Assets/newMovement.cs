@@ -20,11 +20,14 @@ public class newMovement : MonoBehaviour
     [Header("Physics")]
     [SerializeField] private float gravity = -9.8f;
 
+<<<<<<< HEAD
+=======
     [Header("Moving Platform Support")]
     [SerializeField] private bool stickToMovingPlatform = true;
     [SerializeField] private LayerMask groundLayers = ~0;
     [SerializeField] private float groundCheckDistance = 0.2f;
 
+>>>>>>> 20c228848e3f6cf11b6b87ef32f489909b8e32ef
     [Header("Player Animation")]
     public Animator animator;
 
@@ -32,8 +35,11 @@ public class newMovement : MonoBehaviour
     private Vector2 moveInput;
     private Vector3 velocity;
     private bool isCrouching = false;
+<<<<<<< HEAD
+=======
     private Transform currentPlatform;
     private Vector3 lastPlatformPosition;
+>>>>>>> 20c228848e3f6cf11b6b87ef32f489909b8e32ef
 
     // ✅ Matches your Animator parameter exactly
     private static readonly int MoveAmountHash = Animator.StringToHash("moveAmount");
@@ -98,6 +104,11 @@ public class newMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
+<<<<<<< HEAD
+        PlayerMovement();
+    }
+
+=======
         UpdatePlatformAttachment();
 
         if (stickToMovingPlatform)
@@ -153,6 +164,7 @@ public class newMovement : MonoBehaviour
         lastPlatformPosition = currentPlatform.position;
     }
 
+>>>>>>> 20c228848e3f6cf11b6b87ef32f489909b8e32ef
     void PlayerMovement()
     {
         moveInput = moveAction.action.ReadValue<Vector2>();
