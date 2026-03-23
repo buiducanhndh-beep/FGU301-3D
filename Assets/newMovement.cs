@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class newMovement : MonoBehaviour
+public class NewMovement : MonoBehaviour
 {
     [Header("Movement")]
     [SerializeField] private InputActionReference moveAction;
@@ -18,40 +18,41 @@ public class newMovement : MonoBehaviour
     [SerializeField] private float crouchSpeed = 2.5f;
 
     [Header("Physics")]
-    [SerializeField] private float gravity = -9.8f;
+    [SerializeField] private float gravity = -9.81f;
 
-<<<<<<< HEAD
-=======
     [Header("Moving Platform Support")]
     [SerializeField] private bool stickToMovingPlatform = true;
     [SerializeField] private LayerMask groundLayers = ~0;
     [SerializeField] private float groundCheckDistance = 0.2f;
 
->>>>>>> 20c228848e3f6cf11b6b87ef32f489909b8e32ef
-    [Header("Player Animation")]
+    [Header("Player Visual Fix")]
     public Animator animator;
+    public MainCam mainCam;
+    [Tooltip("Kéo Model nhân vật vào đây để sửa lỗi lún khi ngồi")]
+    [SerializeField] private Transform modelTransform; 
+    [SerializeField] private float crouchVisualOffsetY = 0f; 
 
     private CharacterController controller;
     private Vector2 moveInput;
     private Vector3 velocity;
     private bool isCrouching = false;
-<<<<<<< HEAD
-=======
+
     private Transform currentPlatform;
     private Vector3 lastPlatformPosition;
->>>>>>> 20c228848e3f6cf11b6b87ef32f489909b8e32ef
 
-    // ✅ Matches your Animator parameter exactly
+    // Animator hashes
     private static readonly int MoveAmountHash = Animator.StringToHash("moveAmount");
-    private static readonly int IsCrouchHash   = Animator.StringToHash("IsCrouching");
-    private static readonly int JumpHash       = Animator.StringToHash("Jump");
-
-    public MainCam mainCam;
+    private static readonly int IsCrouchHash = Animator.StringToHash("IsCrouching");
+    private static readonly int JumpHash = Animator.StringToHash("Jump");
+    // Thêm hash cho biến Grounded để khóa animation trên không
+    private static readonly int IsGroundedHash = Animator.StringToHash("isGrounded");
 
     void Awake()
     {
         controller = GetComponent<CharacterController>();
         controller.height = normalHeight;
+        controller.center = new Vector3(0, normalHeight / 2f, 0);
+        velocity = Vector3.zero;
     }
 
     void OnEnable()
@@ -76,47 +77,52 @@ public class newMovement : MonoBehaviour
         crouchAction.action.canceled -= OnCrouchStop;
     }
 
+    private void FixedUpdate()
+    {
+        UpdatePlatformAttachment();
+
+        if (stickToMovingPlatform && currentPlatform != null)
+        {
+            ApplyPlatformDelta();
+        }
+
+        PlayerMovement();
+    }
+
     private void OnJump(InputAction.CallbackContext context)
     {
+        // Chỉ cho phép kích hoạt Trigger Jump khi thực sự ở dưới đất
         if (controller.isGrounded && !isCrouching)
         {
             velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
-            if (animator.parameters.Length > 0)
+
+            if (animator != null)
                 animator.SetTrigger(JumpHash);
         }
     }
 
     private void OnCrouchStart(InputAction.CallbackContext context)
     {
-        Debug.Log("Crouch Start triggered");
         isCrouching = true;
-        controller.height = crouchHeight;
-        animator.SetBool(IsCrouchHash, true);
+        SetControllerHeight(crouchHeight);
+        
+        if (modelTransform != null)
+            modelTransform.localPosition = new Vector3(0, crouchVisualOffsetY, 0);
     }
 
     private void OnCrouchStop(InputAction.CallbackContext context)
     {
-        Debug.Log("Crouch Stop triggered");
         isCrouching = false;
-        controller.height = normalHeight;
-        animator.SetBool(IsCrouchHash, false);
+        SetControllerHeight(normalHeight);
+
+        if (modelTransform != null)
+            modelTransform.localPosition = Vector3.zero;
     }
 
-    private void FixedUpdate()
+    private void SetControllerHeight(float height)
     {
-<<<<<<< HEAD
-        PlayerMovement();
-    }
-
-=======
-        UpdatePlatformAttachment();
-
-        if (stickToMovingPlatform)
-        {
-            ApplyPlatformDelta();
-        }
-
-        PlayerMovement();
+        controller.height = height;
+        controller.center = new Vector3(0, height / 2f, 0);
     }
 
     private void UpdatePlatformAttachment()
@@ -128,73 +134,73 @@ public class newMovement : MonoBehaviour
         }
 
         Vector3 origin = transform.position + Vector3.up * 0.1f;
-        float rayDistance = controller.height * 0.6f + groundCheckDistance;
+        float rayDistance = (controller.height * 0.5f) + groundCheckDistance;
 
-        if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, rayDistance, groundLayers, QueryTriggerInteraction.Ignore))
+        if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, rayDistance, groundLayers))
         {
-            if (hit.transform.GetComponentInParent<MovingPlatfor>() != null)
+            if (hit.transform.GetComponentInParent<MovingPlatform>() != null)
             {
                 if (currentPlatform != hit.transform)
                 {
                     currentPlatform = hit.transform;
                     lastPlatformPosition = currentPlatform.position;
                 }
-
                 return;
             }
         }
-
         currentPlatform = null;
     }
 
     private void ApplyPlatformDelta()
     {
-        if (currentPlatform == null)
+        Vector3 delta = currentPlatform.position - lastPlatformPosition;
+        if (delta.sqrMagnitude > 0f)
         {
-            return;
+            controller.Move(delta);
         }
-
-        Vector3 platformDelta = currentPlatform.position - lastPlatformPosition;
-
-        if (platformDelta.sqrMagnitude > 0f)
-        {
-            controller.Move(platformDelta);
-        }
-
         lastPlatformPosition = currentPlatform.position;
     }
 
->>>>>>> 20c228848e3f6cf11b6b87ef32f489909b8e32ef
-    void PlayerMovement()
+    private void PlayerMovement()
     {
         moveInput = moveAction.action.ReadValue<Vector2>();
-
         Vector3 move = mainCam.flatrotation * new Vector3(moveInput.x, 0, moveInput.y).normalized;
 
         float currentSpeed = isCrouching ? crouchSpeed : speed;
         controller.Move(move * currentSpeed * Time.fixedDeltaTime);
 
-        if (move.magnitude > 0)
+        if (move.sqrMagnitude > 0.01f)
         {
             Quaternion targetRotation = Quaternion.LookRotation(move);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, 10f * Time.fixedDeltaTime);
         }
 
-        // Gravity
+        ApplyGravity();
+        UpdateAnimator(move);
+    }
+
+    private void ApplyGravity()
+    {
         if (controller.isGrounded && velocity.y < 0)
         {
             velocity.y = -2f;
         }
-        velocity.y += gravity * Time.fixedDeltaTime;
+        else
+        {
+            velocity.y += gravity * Time.fixedDeltaTime;
+        }
         controller.Move(velocity * Time.fixedDeltaTime);
-
-        UpdateAnimator(move);
     }
 
-    void UpdateAnimator(Vector3 move)
+    private void UpdateAnimator(Vector3 move)
     {
-        // ✅ Drives your blend tree: 0 = Idle, 0.5 = Walk, 1 = Run
-        float moveAmount = move.magnitude;
-        animator.SetFloat(MoveAmountHash, moveAmount, 0.1f, Time.fixedDeltaTime);
+        if (animator == null) return;
+
+        animator.SetFloat(MoveAmountHash, move.magnitude, 0.05f, Time.fixedDeltaTime);
+        animator.SetBool(IsCrouchHash, isCrouching);
+        
+        // CẬP NHẬT TRẠNG THÁI CHẠM ĐẤT: 
+        // Trong Animator, tạo Transition từ Jump/Fall về Idle khi isGrounded = true
+        animator.SetBool(IsGroundedHash, controller.isGrounded);
     }
 }

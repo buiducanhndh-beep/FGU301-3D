@@ -1,26 +1,26 @@
-using System;
 using System.Collections;
 using UnityEngine;
 
-public class platformMoving : MonoBehaviour
+public class MovingPlatform : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     public Transform player;
     public Transform parentObject;
-    [SerializeField]  GameObject PointA;
-    [SerializeField]  GameObject PointB;
+
+    [SerializeField] private GameObject PointA;
+    [SerializeField] private GameObject PointB;
     [SerializeField] private float speed = 5f;
     [SerializeField] private float delay = 1f;
-    [SerializeField] GameObject platform;
+    [SerializeField] private GameObject platform;
 
     private Vector3 targetPosition;
+    private bool goingToB = true; // 🔥 thêm biến này
 
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
         {
-            if (player == null) player = other.transform;
-            player.parent = parentObject;
+            player = other.transform;
+            player.SetParent(parentObject);
         }
     }
 
@@ -28,32 +28,41 @@ public class platformMoving : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            if (player == null) player = other.transform;
-            player.parent = null;
+            player = other.transform;
+            player.SetParent(null);
         }
-    }   
+    }
 
-     void Start()
+    void Start()
     {
         platform.transform.position = PointA.transform.position;
         targetPosition = PointB.transform.position;
-        StartCoroutine(MovePlatForm());
+        StartCoroutine(MovePlatform());
     }
 
-    IEnumerator MovePlatForm()
+    IEnumerator MovePlatform()
     {
         while (true)
         {
-            while((targetPosition - platform.transform.position).sqrMagnitude > 0.01f)
+            // Move tới target
+            while ((targetPosition - platform.transform.position).sqrMagnitude > 0.01f)
             {
-                platform.transform.position = Vector3.MoveTowards(platform.transform.position, targetPosition, speed * Time.deltaTime);
+                platform.transform.position = Vector3.MoveTowards(
+                    platform.transform.position,
+                    targetPosition,
+                    speed * Time.deltaTime
+                );
                 yield return null;
             }
 
-            targetPosition = targetPosition == PointA.transform.position ? PointB.transform.position : PointA.transform.position;
+            // Đợi
             yield return new WaitForSeconds(delay);
+
+            // 🔥 Đổi hướng
+            goingToB = !goingToB;
+            targetPosition = goingToB 
+                ? PointB.transform.position 
+                : PointA.transform.position;
         }
     }
-
-
 }
